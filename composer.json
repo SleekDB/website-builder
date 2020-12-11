@@ -1,5 +1,8 @@
 {
-    "require": {
-        "erusev/parsedown": "^1.7"
-    }
+  "require": {
+    "erusev/parsedown": "^1.7"
+  },
+  "scripts": {
+    "compile": "php make.php"
+  }
 }

@@ -5,9 +5,10 @@ require_once __DIR__ . "/Compiler.php";
 class Ingestor
 {
 
-  function __construct()
+  function __construct($currentVersion)
   {
-    $this->docsDirectory = realpath(__DIR__ . "/../docs/");
+    $this->docsDirectory = realpath(__DIR__ . "/../../docs/");
+    $this->currentVersion = $currentVersion;
   }
 
   function getAvailableVersions()
@@ -21,7 +22,7 @@ class Ingestor
   function ingest()
   {
     foreach ($this->getAvailableVersions() as $key => $version) {
-      (new Compiler($version))->compile();
+      (new Compiler($version))->setCurrentVersion($this->currentVersion)->compile();
     }
   }
 }
