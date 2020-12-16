@@ -5,19 +5,24 @@ class Compiler
 
   function __construct($version)
   {
+    $this->rootPath = __DIR__;
+
     $this->title = "";
+    $this->description = "";
+
     $this->menus = [];
     $this->pages = [];
-    $this->description = "";
+
     $this->version = $version;
     $this->currentVersion = "";
 
-    $this->rootPath = __DIR__;
     $this->docsDir = realpath($this->rootPath . "/../../docs/" . "/") . "/";
     $this->markdownDocumentsDirectory = $this->docsDir . $this->version . "/";
+
     $this->websitePath = realpath($this->rootPath . "/../../sleekdb.github.io/") . "/";
     $this->distRoot = $this->websitePath . "versions/";
     $this->dist = $this->distRoot . $this->version . "/";
+
     $this->currentVersionDist = null;
   }
 
@@ -43,11 +48,13 @@ class Compiler
   {
     $menus = "";
     foreach ($this->menus as $menu) {
-      $menus .= '
+      if (isset($menu['title'])) {
+        $menus .= '
           <a class="gotoblock" href="#/' . $menu['url'] . '">
             <ion-icon name="' . $menu['icon'] . '"></ion-icon> 
             ' . $menu['title'] . '
         </a>';
+      }
     }
     $sidebarHtml = $this->getTemplate("sidebar.html");
     return str_replace("{{--sidebar--}}", $menus, $sidebarHtml);
@@ -107,10 +114,13 @@ class Compiler
 
   function getMarkdownFiles()
   {
-    return array_diff(
-      scandir($this->markdownDocumentsDirectory, SCANDIR_SORT_ASCENDING),
-      array('..', '.')
-    );
+    $listFile = $this->markdownDocumentsDirectory . "lists.json";
+    if (file_exists($listFile)) {
+      $files = file_get_contents($listFile);
+      $files = json_decode($files, true);
+      return $files;
+    }
+    return [];
   }
 
   function getRenderedPagesAndMenuItems()
@@ -120,15 +130,24 @@ class Compiler
     foreach ($this->getMarkdownFiles() as $file) {
       $fileData = file_get_contents($this->markdownDocumentsDirectory . $file);
       $metadata = $this->getMetaData($fileData);
-      if (!isset($metadata['url']) || !$metadata['url']) {
-        $metadata['url'] = "/";
+      if ($metadata !== false) {
+        if (!isset($metadata['url']) || !$metadata['url']) {
+          $metadata['url'] = "/";
+        }
+        if (isset($metadata['website_title'])) {
+          $this->title = $metadata['website_title'];
+        }
+        if (isset($metadata['website_description'])) {
+          $this->description = $metadata['website_description'];
+        }
+        $menus[] = $metadata;
       }
-      $menus[] = $metadata;
       $pages[] = [
         "html" => (new Parsedown())->text($this->removeMetaData($fileData)),
         "metadata" => $metadata,
         "fileName" => $file
       ];
+      echo "✅ $file (" . $this->version . ") \n";
     }
     $this->menus = $menus;
     $this->pages = $pages;
