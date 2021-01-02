@@ -128,26 +128,30 @@ class Compiler
     $menus = [];
     $pages = [];
     foreach ($this->getMarkdownFiles() as $file) {
-      $fileData = file_get_contents($this->markdownDocumentsDirectory . $file);
-      $metadata = $this->getMetaData($fileData);
-      if ($metadata !== false) {
-        if (!isset($metadata['url']) || !$metadata['url']) {
-          $metadata['url'] = "/";
+      if (file_exists($this->markdownDocumentsDirectory . $file)) {
+        $fileData = file_get_contents($this->markdownDocumentsDirectory . $file);
+        $metadata = $this->getMetaData($fileData);
+        if ($metadata !== false) {
+          if (!isset($metadata['url']) || !$metadata['url']) {
+            $metadata['url'] = "/";
+          }
+          if (isset($metadata['website_title'])) {
+            $this->title = $metadata['website_title'];
+          }
+          if (isset($metadata['website_description'])) {
+            $this->description = $metadata['website_description'];
+          }
+          $menus[] = $metadata;
         }
-        if (isset($metadata['website_title'])) {
-          $this->title = $metadata['website_title'];
-        }
-        if (isset($metadata['website_description'])) {
-          $this->description = $metadata['website_description'];
-        }
-        $menus[] = $metadata;
+        $pages[] = [
+          "html" => (new Parsedown())->text($this->removeMetaData($fileData)),
+          "metadata" => $metadata,
+          "fileName" => $file
+        ];
+        echo "✅ $file (" . $this->version . ") \n";
+      } else {
+        echo "🛑 $file not found (" . $this->version . ") \n";
       }
-      $pages[] = [
-        "html" => (new Parsedown())->text($this->removeMetaData($fileData)),
-        "metadata" => $metadata,
-        "fileName" => $file
-      ];
-      echo "✅ $file (" . $this->version . ") \n";
     }
     $this->menus = $menus;
     $this->pages = $pages;
