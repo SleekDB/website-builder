@@ -15,7 +15,7 @@ class Ingestor
   {
     return array_diff(
       scandir($this->docsDirectory, SCANDIR_SORT_ASCENDING),
-      array('..', '.', '.git')
+      array('..', '.', '.git', 'versions.md', '.gitignore')
     );
   }
 
