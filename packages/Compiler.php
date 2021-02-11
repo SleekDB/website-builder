@@ -123,6 +123,34 @@ class Compiler
     return [];
   }
 
+  function addVersionsFile(&$menus, &$pages){
+    $file = "versions.md";
+    if (file_exists($this->docsDir . $file)) {
+      $fileData = file_get_contents($this->docsDir . $file);
+      $metadata = $this->getMetaData($fileData);
+      if ($metadata !== false) {
+        if (!isset($metadata['url']) || !$metadata['url']) {
+          $metadata['url'] = "/";
+        }
+        if (isset($metadata['website_title'])) {
+          $this->title = $metadata['website_title'];
+        }
+        if (isset($metadata['website_description'])) {
+          $this->description = $metadata['website_description'];
+        }
+        $menus[] = $metadata;
+      }
+      $pages[] = [
+        "html" => (new Parsedown())->text($this->removeMetaData($fileData)),
+        "metadata" => $metadata,
+        "fileName" => $file
+      ];
+      echo "✅ $file (" . $this->version . ") \n";
+    } else {
+      echo "🛑 $file not found (" . $this->version . ") \n";
+    }
+  }
+
   function getRenderedPagesAndMenuItems()
   {
     $menus = [];
@@ -153,6 +181,9 @@ class Compiler
         echo "🛑 $file not found (" . $this->version . ") \n";
       }
     }
+
+    $this->addVersionsFile($menus, $pages);
+
     $this->menus = $menus;
     $this->pages = $pages;
   }
@@ -173,7 +204,7 @@ class Compiler
             <div class="left">
               ' . $this->getSidebar() . '
             </div>
-            <div class="right">
+            <div class="right" id="layoutRight">
               ' . $this->getContent() . '
             </div>
           </div>
