@@ -1,5 +1,7 @@
 <?php
 
+// use ParsedownExtra\ParsedownExtra;
+
 class Compiler
 {
 
@@ -123,7 +125,7 @@ class Compiler
     return [];
   }
 
-  function addVersionsFile(&$menus, &$pages){
+  function addVersionsFile(&$menus, &$pages, $parseDownExtra){
     $file = "versions.md";
     if (file_exists($this->docsDir . $file)) {
       $fileData = file_get_contents($this->docsDir . $file);
@@ -141,7 +143,7 @@ class Compiler
         $menus[] = $metadata;
       }
       $pages[] = [
-        "html" => (new Parsedown())->text($this->removeMetaData($fileData)),
+        "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
         "metadata" => $metadata,
         "fileName" => $file
       ];
@@ -153,6 +155,7 @@ class Compiler
 
   function getRenderedPagesAndMenuItems()
   {
+    $parseDownExtra = new ParsedownExtra();
     $menus = [];
     $pages = [];
     foreach ($this->getMarkdownFiles() as $file) {
@@ -172,7 +175,7 @@ class Compiler
           $menus[] = $metadata;
         }
         $pages[] = [
-          "html" => (new Parsedown())->text($this->removeMetaData($fileData)),
+          "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
           "metadata" => $metadata,
           "fileName" => $file
         ];
@@ -182,7 +185,7 @@ class Compiler
       }
     }
 
-    $this->addVersionsFile($menus, $pages);
+    $this->addVersionsFile($menus, $pages, $parseDownExtra);
 
     $this->menus = $menus;
     $this->pages = $pages;
