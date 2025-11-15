@@ -4,6 +4,8 @@ require_once __DIR__ . "/Compiler.php";
 
 class Ingestor
 {
+  private $docsDirectory;
+  private $currentVersion;
 
   function __construct($currentVersion)
   {
