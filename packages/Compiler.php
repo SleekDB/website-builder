@@ -15,6 +15,8 @@ class Compiler
   private $distRoot;
   private $dist;
   private $currentVersionDist;
+  private $bugFixOnlyVersion;
+  private $archivedVersions;
 
   function __construct($version)
   {
@@ -107,9 +109,11 @@ class Compiler
     return $this;
   }
 
-  function setCurrentVersion($currentVersion)
+  function setCurrentVersion($currentVersion, $bugFixOnlyVersion, $archivedVersions)
   {
     $this->currentVersion = trim($currentVersion);
+    $this->bugFixOnlyVersion = trim($bugFixOnlyVersion);
+    $this->archivedVersions = $archivedVersions;
     $this->currentVersionDist = $this->distRoot . $this->currentVersion . "/";
     return $this;
   }
@@ -142,6 +146,54 @@ class Compiler
       return $files;
     }
     return [];
+  }
+
+  function addVersionsFile(&$menus, &$pages, $parseDownExtra)
+  {
+    $fileName = "versions.md";
+
+    if (file_exists($this->docsDir . $fileName)) {
+      $fileData = file_get_contents($this->docsDir . $fileName);
+
+      $fileData .= "\n\n";
+      $fileData .= "# Latest Version\n";
+      $fileData .= "- **[" . $this->currentVersion . "](/)**  (Actively Maintained Version)\n\n";
+      $fileData .= "Always refer to the latest version for the most up-to-date features and security updates.\n\n";
+
+      if ($this->bugFixOnlyVersion) {
+        $fileData .= "## Bug Fix Only Version\n";
+        $fileData .= "- **[" . $this->bugFixOnlyVersion . "](/)** (Bug Fix Only)\n\n";
+      }
+      if (count($this->archivedVersions) > 0) {
+        $fileData .= "## Archived Versions\n";
+        foreach ($this->archivedVersions as $archivedVersion) {
+          $fileData .= "- **[" . $archivedVersion . "](/versions/" . $archivedVersion . "/)** (Archived)\n";
+        }
+        $fileData .= "\n";
+      }
+
+      $metadata = $this->getMetaData($fileData);
+      if ($metadata !== false) {
+        if (!isset($metadata['url']) || !$metadata['url']) {
+          $metadata['url'] = "/";
+        }
+        if (isset($metadata['website_title'])) {
+          $this->title = $metadata['website_title'];
+        }
+        if (isset($metadata['website_description'])) {
+          $this->description = $metadata['website_description'];
+        }
+        $menus[] = $metadata;
+      }
+      $pages[] = [
+        "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
+        "metadata" => $metadata,
+        "fileName" => $fileName
+      ];
+      echo "✅ $fileName (" . $this->version . ") \n";
+    } else {
+      echo "🛑 $fileName not found (" . $this->version . ") \n";
+    }
   }
 
   function addPageFile(&$menus, &$pages, $parseDownExtra, $fileName)
@@ -294,7 +346,7 @@ class Compiler
 
     $this->addPageFile($menus, $pages, $parseDownExtra, "support.md");
     $this->addPageFile($menus, $pages, $parseDownExtra, "contact.md");
-    $this->addPageFile($menus, $pages, $parseDownExtra, "versions.md");
+    $this->addVersionsFile($menus, $pages, $parseDownExtra);
 
     $this->menus = $menus;
     $this->pages = $pages;
