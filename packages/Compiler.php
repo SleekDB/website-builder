@@ -1,9 +1,20 @@
 <?php
 
-// use ParsedownExtra\ParsedownExtra;
-
 class Compiler
 {
+  private $rootPath;
+  private $title;
+  private $description;
+  private $menus;
+  private $pages;
+  private $version;
+  private $currentVersion;
+  private $docsDir;
+  private $markdownDocumentsDirectory;
+  private $websitePath;
+  private $distRoot;
+  private $dist;
+  private $currentVersionDist;
 
   function __construct($version)
   {
@@ -50,6 +61,11 @@ class Compiler
   {
     $menus = "";
     foreach ($this->menus as $menu) {
+      if (!$this->isCurrentVersion() && $menu['url'] === "features") {
+        // Skip adding the feature page to the sidebar for non-current versions
+        continue;
+      }
+
       if (isset($menu['title'])) {
         $menus .= '
           <a class="gotoblock" href="#/' . $menu['url'] . '">
@@ -106,7 +122,10 @@ class Compiler
   function getMetaData($page)
   {
     preg_match($this->getMetaDataPattern(), $page, $matches);
-    return @json_decode($matches[1], true);
+    if (isset($matches[1])) {
+      return json_decode($matches[1], true);
+    }
+    return null;
   }
 
   function removeMetaData($data)
@@ -125,10 +144,10 @@ class Compiler
     return [];
   }
 
-  function addVersionsFile(&$menus, &$pages, $parseDownExtra){
-    $file = "versions.md";
-    if (file_exists($this->docsDir . $file)) {
-      $fileData = file_get_contents($this->docsDir . $file);
+  function addPageFile(&$menus, &$pages, $parseDownExtra, $fileName)
+  {
+    if (file_exists($this->docsDir . $fileName)) {
+      $fileData = file_get_contents($this->docsDir . $fileName);
       $metadata = $this->getMetaData($fileData);
       if ($metadata !== false) {
         if (!isset($metadata['url']) || !$metadata['url']) {
@@ -145,32 +164,120 @@ class Compiler
       $pages[] = [
         "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
         "metadata" => $metadata,
-        "fileName" => $file
+        "fileName" => $fileName
       ];
-      echo "✅ $file (" . $this->version . ") \n";
+      echo "✅ $fileName (" . $this->version . ") \n";
     } else {
-      echo "🛑 $file not found (" . $this->version . ") \n";
+      echo "🛑 $fileName not found (" . $this->version . ") \n";
     }
+  }
+
+  function addHomePageFile(&$menus, &$pages, $parseDownExtra)
+  {
+    $fileData = "";
+    $file = $this->isCurrentVersion() ?  "home-page.md" : "home-page-old-versions.md";
+    $fileData = file_get_contents($this->docsDir . $file);
+
+    if ($this->isCurrentVersion()) {
+      if (isset($metadata['website_title'])) {
+        $this->title = $metadata['website_title'];
+      }
+      if (isset($metadata['website_description'])) {
+        $this->description = $metadata['website_description'];
+      }
+    } else {
+      $this->title = "SleekDB Version: " . $this->version;
+      $this->description = "This is the documentation for SleekDB Version: " . $this->version;
+
+      $fileData .= "\n# SleekDB version " . $this->version . "\n\n" .
+        "This is the documentation for SleekDB version " . $this->version . ".\n\n" .
+        "For the latest features and updates, please visit the [current version](/).\n\n</br></br>\n" .
+        "# **IMPORTANT:**\n" .
+        "## This version (" . $this->version . ") is no longer actively maintained.\n" .
+        "### Please refer to the current version (" . $this->currentVersion . ") for the latest updates.\n\n" .
+        "---\n\n";
+    }
+
+    $metadata = $this->getMetaData($fileData);
+
+    if ($metadata !== false) {
+      if (!isset($metadata['url']) || !$metadata['url']) {
+        $metadata['url'] = "/";
+      }
+      if (isset($metadata['website_title'])) {
+        $this->title = $metadata['website_title'];
+      }
+      if (isset($metadata['website_description'])) {
+        $this->description = $metadata['website_description'];
+      }
+      $menus[] = $metadata;
+    }
+    $pages[] = [
+      "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
+      "metadata" => $metadata,
+      "fileName" => $file
+    ];
+    echo "✅ $file (" . $this->version . ") \n";
+  }
+
+  function isCurrentVersion()
+  {
+    return $this->version === $this->currentVersion;
   }
 
   function getRenderedPagesAndMenuItems()
   {
     $parseDownExtra = new ParsedownExtra();
+
     $menus = [];
     $pages = [];
+
+    $this->addHomePageFile($menus, $pages, $parseDownExtra);
+
     foreach ($this->getMarkdownFiles() as $file) {
+      if (!$this->isCurrentVersion() && $file === "features.md") {
+        // Skip processing the feature page for non-current versions
+        continue;
+      }
+
+      if ($file === "contact.md") {
+        // Skip processing the contact page
+        continue;
+      }
+
+      if ($file === "home.md") {
+        // The main home page is handled separately
+        continue;
+      }
+
+      if ($file === "contributing.md") {
+        // The contributing page is handled separately
+        continue;
+      }
+
       if (file_exists($this->markdownDocumentsDirectory . $file)) {
         $fileData = file_get_contents($this->markdownDocumentsDirectory . $file);
         $metadata = $this->getMetaData($fileData);
+
         if ($metadata !== false) {
           if (!isset($metadata['url']) || !$metadata['url']) {
             $metadata['url'] = "/";
           }
-          if (isset($metadata['website_title'])) {
-            $this->title = $metadata['website_title'];
-          }
-          if (isset($metadata['website_description'])) {
-            $this->description = $metadata['website_description'];
+          if ($this->isCurrentVersion()) {
+            // Now processing the title and description for the current maintained version
+            if (isset($metadata['website_title'])) {
+              $this->title = $metadata['website_title'];
+            }
+            if (isset($metadata['website_description'])) {
+              $this->description = $metadata['website_description'];
+            }
+          } else {
+            if (isset($metadata['website_title'])) {
+              $this->title = "SleekDB Version: " . $this->version;
+            }
+            if (isset($metadata['website_description'])) {
+              $this->description = "This is the documentation for SleekDB version: " . $this->version;
+            }
           }
           $menus[] = $metadata;
         }
@@ -185,7 +292,9 @@ class Compiler
       }
     }
 
-    $this->addVersionsFile($menus, $pages, $parseDownExtra);
+    $this->addPageFile($menus, $pages, $parseDownExtra, "support.md");
+    $this->addPageFile($menus, $pages, $parseDownExtra, "contact.md");
+    $this->addPageFile($menus, $pages, $parseDownExtra, "versions.md");
 
     $this->menus = $menus;
     $this->pages = $pages;
@@ -222,7 +331,8 @@ class Compiler
   function removeDist()
   {
     if (file_exists($this->dist)) {
-      system("rm -R " . $this->dist);
+      // Use escapeshellarg to prevent command injection
+      system("rm -R " . escapeshellarg($this->dist));
     }
   }
 
@@ -231,8 +341,30 @@ class Compiler
     $this->removeDist();
     $this->getRenderedPagesAndMenuItems();
     $siteHtml = $this->getRenderedSite();
-    mkdir($this->dist);
-    file_put_contents($this->dist . "index.html", $siteHtml);
-    copy($this->currentVersionDist . "/index.html", $this->websitePath . "/index.html");
+
+    // Create directory with error handling
+    if (!is_dir($this->dist)) {
+      if (!mkdir($this->dist, 0755, true)) {
+        throw new Exception("Failed to create directory: " . $this->dist);
+      }
+    }
+
+    // Write file with error handling
+    if (file_put_contents($this->dist . "index.html", $siteHtml) === false) {
+      throw new Exception("Failed to write file: " . $this->dist . "index.html");
+    }
+
+    // Copy file with null check and error handling
+    if ($this->currentVersionDist !== null) {
+      $sourceFile = $this->currentVersionDist . "/index.html";
+      $destFile = $this->websitePath . "/index.html";
+      if (file_exists($sourceFile)) {
+        if (!copy($sourceFile, $destFile)) {
+          throw new Exception("Failed to copy file from $sourceFile to $destFile");
+        }
+      } else {
+        echo "⚠️  Warning: Source file does not exist: $sourceFile\n";
+      }
+    }
   }
 }
