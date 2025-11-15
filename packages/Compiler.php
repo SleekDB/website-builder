@@ -164,6 +164,7 @@ class Compiler
         $fileData .= "## Bug Fix Only Version\n";
         $fileData .= "- **[" . $this->bugFixOnlyVersion . "](/)** (Bug Fix Only)\n\n";
       }
+
       if (count($this->archivedVersions) > 0) {
         $fileData .= "## Archived Versions\n";
         foreach ($this->archivedVersions as $archivedVersion) {
@@ -173,6 +174,7 @@ class Compiler
       }
 
       $metadata = $this->getMetaData($fileData);
+
       if ($metadata !== false) {
         if (!isset($metadata['url']) || !$metadata['url']) {
           $metadata['url'] = "/";
@@ -185,11 +187,13 @@ class Compiler
         }
         $menus[] = $metadata;
       }
+
       $pages[] = [
         "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
         "metadata" => $metadata,
         "fileName" => $fileName
       ];
+
       echo "✅ $fileName (" . $this->version . ") \n";
     } else {
       echo "🛑 $fileName not found (" . $this->version . ") \n";
@@ -230,45 +234,39 @@ class Compiler
     $file = $this->isCurrentVersion() ?  "home-page.md" : "home-page-old-versions.md";
     $fileData = file_get_contents($this->docsDir . $file);
 
+    $metadata = $this->getMetaData($fileData);
+
     if ($this->isCurrentVersion()) {
-      if (isset($metadata['website_title'])) {
-        $this->title = $metadata['website_title'];
-      }
-      if (isset($metadata['website_description'])) {
-        $this->description = $metadata['website_description'];
-      }
+      $this->title = $metadata['website_title'];
+      $this->description = $metadata['website_description'];
     } else {
-      $this->title = "SleekDB Version: " . $this->version;
+      $this->title = "SleekDB " . $this->version;
       $this->description = "This is the documentation for SleekDB Version: " . $this->version;
 
-      $fileData .= "\n# SleekDB version " . $this->version . "\n\n" .
+      $fileData .= "\n# SleekDB: " . $this->version . "\n\n" .
         "This is the documentation for SleekDB version " . $this->version . ".\n\n" .
         "For the latest features and updates, please visit the [current version](/).\n\n</br></br>\n" .
         "# **IMPORTANT:**\n" .
         "## This version (" . $this->version . ") is no longer actively maintained.\n" .
         "### Please refer to the current version (" . $this->currentVersion . ") for the latest updates.\n\n" .
         "---\n\n";
+      $metadata = $this->getMetaData($fileData);
     }
 
-    $metadata = $this->getMetaData($fileData);
 
     if ($metadata !== false) {
       if (!isset($metadata['url']) || !$metadata['url']) {
         $metadata['url'] = "/";
       }
-      if (isset($metadata['website_title'])) {
-        $this->title = $metadata['website_title'];
-      }
-      if (isset($metadata['website_description'])) {
-        $this->description = $metadata['website_description'];
-      }
       $menus[] = $metadata;
     }
+
     $pages[] = [
       "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
       "metadata" => $metadata,
       "fileName" => $file
     ];
+
     echo "✅ $file (" . $this->version . ") \n";
   }
 
@@ -315,29 +313,23 @@ class Compiler
           if (!isset($metadata['url']) || !$metadata['url']) {
             $metadata['url'] = "/";
           }
-          if ($this->isCurrentVersion()) {
-            // Now processing the title and description for the current maintained version
-            if (isset($metadata['website_title'])) {
-              $this->title = $metadata['website_title'];
-            }
-            if (isset($metadata['website_description'])) {
-              $this->description = $metadata['website_description'];
-            }
-          } else {
-            if (isset($metadata['website_title'])) {
-              $this->title = "SleekDB Version: " . $this->version;
-            }
-            if (isset($metadata['website_description'])) {
-              $this->description = "This is the documentation for SleekDB version: " . $this->version;
-            }
+
+          if (isset($metadata['website_title'])) {
+            $this->title = $metadata['website_title'];
+          }
+
+          if (isset($metadata['website_description'])) {
+            $this->description = $metadata['website_description'];
           }
           $menus[] = $metadata;
         }
+
         $pages[] = [
           "html" => $parseDownExtra->text($this->removeMetaData($fileData)),
           "metadata" => $metadata,
           "fileName" => $file
         ];
+
         echo "✅ $file (" . $this->version . ") \n";
       } else {
         echo "🛑 $file not found (" . $this->version . ") \n";
