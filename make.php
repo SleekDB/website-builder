@@ -5,6 +5,6 @@ require_once __DIR__ . "/packages/Ingestor.php";
 
 echo "Compilation started\n";
 
-(new Ingestor('2.50'))->ingest();
+(new Ingestor())->ingest();
 
 echo "Compilation ended\n";
