@@ -3,8 +3,8 @@
 require_once __DIR__ . "/vendor/autoload.php";
 require_once __DIR__ . "/packages/Ingestor.php";
 
-echo "Compilataion started\n";
+echo "Compilation started\n";
 
-(new Ingestor('2.14'))->ingest();
+(new Ingestor('2.50'))->ingest();
 
-echo "Compilataion ended\n";
+echo "Compilation ended\n";
