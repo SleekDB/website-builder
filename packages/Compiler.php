@@ -162,7 +162,7 @@ class Compiler
 
       if ($this->bugFixOnlyVersion) {
         $fileData .= "## Bug Fix Only Version\n";
-        $fileData .= "- **[" . $this->bugFixOnlyVersion . "](/)** (Bug Fix Only)\n\n";
+        $fileData .= "- **[" . $this->bugFixOnlyVersion . "](/versions/" . $this->bugFixOnlyVersion . "/)** (Bug Fix Only)\n\n";
       }
 
       if (count($this->archivedVersions) > 0) {
@@ -313,7 +313,7 @@ class Compiler
         if ($file === "installation.md" && !$this->isCurrentVersion()) {
           $fileData = str_replace(
             "composer require rakibtg/sleekdb",
-            "composer require rakibtg/sleekdb " . $this->version,
+            "composer require rakibtg/sleekdb ^" . $this->version,
             $fileData
           );
         }
