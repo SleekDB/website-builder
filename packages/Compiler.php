@@ -360,6 +360,8 @@ class Compiler
         <html lang="en">
           ' . $this->getHeadTag() . '
         <body>
+
+        ' . $this->getTemplate("analytics.html") . '
         
         <div class="container">
           <div class="header">
