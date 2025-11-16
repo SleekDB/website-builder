@@ -309,6 +309,15 @@ class Compiler
         $fileData = file_get_contents($this->markdownDocumentsDirectory . $file);
         $metadata = $this->getMetaData($fileData);
 
+        // Replace install command with the appropriate version.
+        if ($file === "installation.md" && !$this->isCurrentVersion()) {
+          $fileData = str_replace(
+            "composer require rakibtg/sleekdb",
+            "composer require rakibtg/sleekdb " . $this->version,
+            $fileData
+          );
+        }
+
         if ($metadata !== false) {
           if (!isset($metadata['url']) || !$metadata['url']) {
             $metadata['url'] = "/";
